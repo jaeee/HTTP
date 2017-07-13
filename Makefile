@@ -1,8 +1,7 @@
 
 CC=gcc
 BIN=httpd
-SRC=$(shell ls *.c)
-OBJ=$(SRC:.c=.o)
+OBJ=http.o main.o
 
 LDFLAGS=-lpthread
 
