@@ -43,7 +43,12 @@ int startup(const char* _ip, int _port)
 //行获取 
 static int getline(int fd, char* buff, int len)
 {
-
+	char c = '\0';
+	int i = 0;
+	while(c != '\n' && i < len-1)
+	{
+		ssize_t s = recv(fd, &c, 1, 0);
+	}
 }
 void* handler_request(void *arg)
 {
