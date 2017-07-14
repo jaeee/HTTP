@@ -38,13 +38,11 @@ int main(int argc, char* argv[])
 		}
 
 		printf("get a client : [ %s : %d ] \n", inet_ntoa(client.sin_addr), ntohs(client.sin_port));
-
 		//创建线程
-		/******************************************************************/
-		//pthread_t id;
-		//pthread_create(&id, NULL, handler_request, (void*)new_sock);
-		//pthread_detach(id);
-		/*******************************************************************/
+		pthread_t id;
+		pthread_create(&id, NULL, handler_request, (void*)new_sock);
+		pthread_detach(id);
+		
 	}
 	return 0;
 }
