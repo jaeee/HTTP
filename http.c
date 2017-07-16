@@ -84,6 +84,42 @@ int exe_cgi(int fd, const char* method, const char* path, const char* query_stri
 	char METHOD[SIZE/10];
 	char QUERY_STRING[SIZE];
 	char CONTENT_LENGTH[SIZE];
+	if(strcasecmp(method, "GET") == 0)
+	{
+		drop_header(fd);
+	}
+	else
+	{
+		char buff[SIZE];
+		int ret = -1;
+		do
+		{
+			ret = get_line(fd, buff, sizeof(buff));
+			if(strncasecmp(buff, "Content-Length: ", 16) == 0)
+			{
+				content_len = atoi(&buff[16]);
+			}
+		}while(ret > 0 && strcmp(buff, "\n"));
+		if(content_len == -1)
+		{
+			echo_error(fd, 401);
+			return -1;
+		}
+	}
+	printf("cgi: path: %s\n", path);
+	int input[2];
+	int otput[2];
+	if(pipe(input) < 0)
+	{
+		echo_error(fd, 401);
+		return -2;
+	}
+	if(pipe(output) < 0)
+	{
+		echo_error(fd, 401);
+		return -1;
+	}
+
 }
 //level:报警级别
 void print_log(const char* msg, int level)
