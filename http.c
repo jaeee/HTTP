@@ -63,10 +63,11 @@ static int get_line(int fd, char* buff, int len)
 				}
 			}
 		}//到这里 所有的换行都统一为\n
-		buff[i] = 0;
-		return i;
+		buff[i++] = c;
 	}
 
+		buff[i] = 0;
+		return i;
 }
 void drop_header(int fd)
 {
@@ -162,7 +163,7 @@ int exe_cgi(int fd, const char* method, const char* path, const char* query_stri
 	{//child
 		close(input[1]);
 		close(output[0]);
-		sprintf(METHOD, "METHOD=%S", method);
+		sprintf(METHOD, "METHOD=%s", method);
 		putenv(METHOD);
 		if(strcasecmp(method, "GET") == 0)
 		{
@@ -225,7 +226,8 @@ void* handler_request(void *arg)
 	//请求报头+空行
 	do
 	{
-		ret = getline(fd, buff, sizeof(buff));//getline返回的是文件描述符
+		ret = get_line(fd, buff, sizeof(buff));//getline返回的是文件描述符
+	    printf("%s\n",buff);
 	}while(ret > 0 && strcmp(buff, "\n"))
 	printf("###############################################\n");
 
@@ -336,9 +338,9 @@ void* handler_request(void *arg)
 		drop_header(fd);
 		errno_num = echo_www(fd, path, st.st_size);
 	}
+#endif
+
 end:
 	echo_error(fd, errno_num);
 	close(fd);
-#endif
-
 }
