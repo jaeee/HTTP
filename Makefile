@@ -2,7 +2,7 @@
 CC=gcc
 BIN=httpd
 OBJ=http.o main.o
-
+FLAGS=#-D_DEBUG_
 LDFLAGS=-lpthread
 
 $(BIN):$(OBJ)
@@ -10,7 +10,7 @@ $(BIN):$(OBJ)
 #目录下所有.c文件生成.o文件
 
 %.o:%.c
-	$(CC) -c $< 
+	$(CC) -c $< $(FLAGS) 
 
 .PHONY:clean
 clean:

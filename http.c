@@ -41,7 +41,7 @@ int startup(const char* _ip, int _port)
 }
 
 //获得行消息
-static int getline(int fd, char* buff, int len)
+static int get_line(int fd, char* buff, int len)
 {
 	char c = '\0';
 	int i = 0;
@@ -63,7 +63,7 @@ static int getline(int fd, char* buff, int len)
 				}
 			}
 		}//到这里 所有的换行都统一为\n
-		buf[i] = 0;
+		buff[i] = 0;
 		return i;
 	}
 
@@ -76,6 +76,32 @@ void drop_header(int fd)
 	{
 		ret = get_line(fd, buff, sizeof(buff));
 	}while(ret > 0 && strcmp(buff, "\n"));
+}
+void echo_error(int fd, int errno_num)
+{
+
+}
+
+int echo_www(int fd, const char* path, int size)
+{
+	int new_fd = open(path, O_RDONLY);
+	if(new_fd < 0)
+	{
+		print_log("open file error!", FATAL);
+		return 404;
+	}
+
+	const char* echo_line = "HTTP/1.0 200 OK\r\n";
+	send(fd, echo_line, strlen(echo_line), 0);
+	const char* blank_line = "\r\n";
+	send(fd, blank_line,strlen(blank_line), 0);
+
+	if(sendfile(fd, new_fd, NULL, size) < 0)
+	{
+		print_log("send file error!", FATAL);
+		return 200;
+	}
+	close(new_fd);
 }
 
 int exe_cgi(int fd, const char* method, const char* path, const char* query_string)
@@ -108,7 +134,7 @@ int exe_cgi(int fd, const char* method, const char* path, const char* query_stri
 	}
 	printf("cgi: path: %s\n", path);
 	int input[2];
-	int otput[2];
+	int output[2];
 	if(pipe(input) < 0)
 	{
 		echo_error(fd, 401);
@@ -117,9 +143,66 @@ int exe_cgi(int fd, const char* method, const char* path, const char* query_stri
 	if(pipe(output) < 0)
 	{
 		echo_error(fd, 401);
-		return -1;
+		return -3;
 	}
+	const char* echo_line = "HTTP/1.0 200 OK\r\n";
+	send(fd, echo_line, strlen(echo_line), 0);
+	const char* type = "Content-Type:text/html;charset=ISO-8859-1\r\n";
+	send(fd, type, strlen(type), 0);
+	const char* blank_line="\r\n";
+	send(fd, blank_line, strlen(blank_line), 0);
 
+	pid_t id = fork();
+	if(id < 0)
+	{
+		echo_error(fd, 501);
+		return -2;
+	}
+	else if(id == 0)
+	{//child
+		close(input[1]);
+		close(output[0]);
+		sprintf(METHOD, "METHOD=%S", method);
+		putenv(METHOD);
+		if(strcasecmp(method, "GET") == 0)
+		{
+			sprintf(QUERY_STRING, "QUERY_STRING=%s", query_string);
+			putenv(QUERY_STRING);
+		}
+		dup2(input[0], 0);
+		dup2(output[1], 1);
+		execl(path, path, NULL);
+		exit(1);
+	}
+	else
+	{
+		close(input[0]);
+		close(output[1]);
+
+		int i = 0;
+		char c = '\0';
+		for(; i < content_len; i++)
+		{
+			recv(fd, &c, 1, 0);
+			write(input[1], &c, 1);
+		}
+
+		while(1)
+		{
+			ssize_t s = read(output[0], &c, 1);
+			if(s > 0)
+			{
+				send(fd, &c, 1, 0);
+			}
+			else
+			{
+				break;
+			}
+		}
+		waitpid(id, NULL, 0);
+		close(input[1]);
+		close(output[0]);
+	}
 }
 //level:报警级别
 void print_log(const char* msg, int level)
@@ -158,7 +241,7 @@ void* handler_request(void *arg)
 	if(get_line(fd, buff, sizeof(buff)) <= 0)
 	{
 		print_log("get request line error", FATAL);
-		error_num = 501;
+		errno_num = 501;
 		goto end;
 	}
     //获取方法
@@ -170,13 +253,13 @@ void* handler_request(void *arg)
 	}
 	method[i] = 0;
     //跳过你空格
-	while(issapce(buff[j]) && j < sizeof(buff))
+	while(isspace(buff[j]) && j < sizeof(buff))
 	{
 		j++;
 	}
 	//获取url
 	i = 0;
-	while(i < sizeof(url) && j < sizeof(buff) && !issapce(buff[j]))
+	while(i < sizeof(url) && j < sizeof(buff) && !isspace(buff[j]))
 	{
 		url[i] = buff[j];
 		i++;
@@ -203,7 +286,7 @@ void* handler_request(void *arg)
 	while(*query_string != 0)
 	{
 		//获取域
-		if(query_string == '?')
+		if(*query_string == '?')
 		{
 			cgi = 1;
 			*query_string = '\0';

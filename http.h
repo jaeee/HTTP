@@ -18,11 +18,19 @@
 #include<pthread.h>
 #include<sys/stat.h>
 #include<unistd.h>
+#include<sys/sendfile.h>
+
 #define SIZE 1024
+#define NOTICE 0
+#define WARNING 1
+#define FATAL 2
 
-static void Usage(char* src);
 
+void print_log(const char* msg, int level);
 int startup(const char* _ip, int _port);
 void* handler_request(void *arg);
+void echo_error(int fd, int errno_num);
+int echo_www(int fd, const char* path, int size);
+int exe_cgi(int fd, const char* method, const char* path, const char* query_string);
 
 #endif
