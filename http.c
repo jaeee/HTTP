@@ -284,6 +284,7 @@ void* handler_request(void *arg)
 
 	//url
 	//GET后面有参数 ==》 CGI
+	//这里处理GET带参
 	query_string = url;
 	while(*query_string != 0)
 	{
@@ -301,9 +302,9 @@ void* handler_request(void *arg)
 	sprintf(path, "wwwroot%s", url);//????  // / /a/b/c
 	if(path[strlen(path)-1] == '/')
 	{
+		//这里处理当请求根目录或者以\结尾时
 		strcat(path, "index.html");
 	}
-
 	printf("path: %s\n" , path);
 	// /a/b/c.html
 	struct stat st;
@@ -318,10 +319,12 @@ void* handler_request(void *arg)
 	{
 		if(S_ISDIR(st.st_mode))
 		{
+			//如果是目录
 			strcat(path, "/index.html");
 		}
 		else
 		{
+		//根目录 或者以\结
 			if((st.st_mode & S_IXUSR) || (st.st_mode & S_IXGRP) ||\
 					(st.st_mode & S_IXOTH))
 				cgi = 1;
