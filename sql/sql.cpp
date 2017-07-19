@@ -5,48 +5,80 @@
 	> Created Time: Tue 18 Jul 2017 11:49:37 AM CST
  ************************************************************************/
 #include"sql.h"
-sql::sql()
+
+sql::sql(const std::string &_user, const std::string &_ip,\
+		const std::string &_passwd, const std::string &_db,\
+		const int &_port):user(_user), ip(_ip), passwd(_passwd),\
+						  db(_db), port(_port)
 {
-	mysql_init(&my_sql);//mysql.h 中提供的函数
+	conn = mysql_init(NULL); 
 }
 sql::~sql()
 {
-	mysql_close(&my_sql);
+	mysql_close(conn);
 }
-int sql::sql_connect()
+int sql::connect()
 {
-	bool ret = true;
-	if(mysql_real_connect(&my_sql, "127.0.0.1", "root", NULL, "student_info", 3306, NULL, 0) == NULL)
+	if(mysql_real_connect(conn, ip.c_str(), user.c_str(),\
+				passwd.c_str(), db.c_str(), port, NULL, 0))
 	{
-		std::cout << "connect failed..."<< std::endl;
-		ret = false;
-		goto end;
+		std::cout << "connect success!" << std::endl;
+		return 0;
 	}
-	std::cout << "connect success ... " << std::endl;
-end:
-	return ret;
-}
-int sql::sql_insert(const std::string& data)
-{
-	std::string str = "insert into student(name, sex, school, hobby)values(";
-	str += data;
-	str += ")";
-	mysql_query(&my_sql, str.c_str());
-}
-void sql::sql_select(const std::string& data)
-{
-	MYSQL_RES *res;
-	std::string str = "select * from student";
-	if(mysql_query(&my_sql, data.c_str()) == 0)
+	else
 	{
-		res = mysql_store_result(&my_sql);
-		int rows = mysql_num_rows(res);
-		int fields = mysql_num_fields(res);
-
-		MYSQL_ROW line;
-		for(int i = 0; i < rows; i++)
-		{}
+		return -1;
 	}
 }
+int sql::insert(const std::string &name, const std::string &sex,\
+		const std::string &school, const std::string &hobby)
+{
+	std::string sql = "INSERT INTO student (name, sex, school, hooby) values('";
+	sql += name;
+	sql += "','";
+	sql += sex;
+	sql += "','";
+	sql += school;
+	sql += "','";
+	sql += hobby;
+	sql += "')";
 
+	int ret = mysql_query(conn, sql.c_str());
+	std::cout << sql << "ret: " << ret << std::endl;
+}
+int sql::select()
+{
+	std::string sql = "select * from student";
+	int ret = mysql_query(conn, sql.c_str());
+	if(ret == 0)
+	{
+		MYSQL_RES* res = mysql_store_result(conn);
+		if(res)
+		{
+			int lines = mysql_num_rows(res);
+			int cols = mysql_num_fields(res);
+			std::cout << "lines: " << "cols: " << cols << std::endl;
+			MYSQL_FIELD *fd = NULL;
+			for(; fd = mysql_fetch_field(res) ;)
+			{
+				std::cout << fd->name << ' ';
+			}
 
+			std::cout << std::endl;
+
+			int i = 0;
+			for(; i < lines; i++)
+			{
+				MYSQL_ROW row = mysql_fetch_row(res);
+				int j = 0;
+				for(; i < lines; i++)
+				{
+					std::cout<< row[j] << ' ';
+				}
+				std::cout << std::endl;
+			}
+		}
+		return 0;
+	}
+	return -1;
+}

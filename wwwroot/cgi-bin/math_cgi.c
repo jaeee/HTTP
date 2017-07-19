@@ -12,31 +12,30 @@
 
 #define SIZE 1024
 
-static void math_data(char* data)
+static void math_cal(char buff[])
 {
 	printf("cgi is running! \n");
-	char* str[3];
-	char* ptr = data;
+	char* argv[3];
+	char* start = buff;
 	int i = 0;
-	while(*ptr)
+	while(*start)
 	{
-		if(*ptr == '=')
+		if(*start == '=')
 		{
-			str[i] = ptr+1;
-			i++;
+			start++;
+			argv[i++] = start;
+			continue;
 		}
-		else if(*ptr == '&')
+		else if(*start == '&')
 		{
-			*ptr = '\0';
+			*start = '\0';
 		}
-		else
-		{}
-		ptr++;
+		start++;
 	}
 
-	str[i] = NULL;
-	int data1 = atoi(str[0]);
-	int data2 = atoi(str[1]);
+	argv[i] = NULL;
+	int data1 = atoi(argv[0]);
+	int data2 = atoi(argv[1]);
 	printf("<html>");
 	printf("<body>");
 	printf("<h2>%d + %d = %d</h2><br/>", data1, data2, data1+data2);
@@ -50,57 +49,46 @@ static void math_data(char* data)
 
 int main()
 {
-	char method[SIZE];
-	char content_data[SIZE];
-	char content_len[SIZE];
+	char* method = NULL;
+	char* arg_string = NULL;
+	char* content_len = NULL;
+	char buff[1024];
 
-	if(getenv("METHOD"))
+	method = getenv("METHOD");
+	if(method && strcasecmp(method, "GET") == 0)
 	{
-		strcpy(method, getenv("METHOD"));
+		arg_string = getenv("QUERY_STRING");
+		if(!arg_string)
+		{
+			printf("get method GET arg error!\n");
+			return 1;
+		}
+		strcpy(buff, arg_string);
+	}
+	else if(method && strcasecmp(method, "POST") == 0)
+	{
+		content_len = getenv("CONTENT_LENGTH");
+		if(!content_len)
+		{
+			printf("get method POST content_length error!\n");
+			return 2;
+		}
+		int i = 0;
+		char c = 0;
+		int nums = atoi(content_len);
+		for(; i < nums ; i++)
+		{
+			read(0, &c, 1);
+			buff[i] = c;
+		}
+		buff[i] = '\0';
 	}
 	else
 	{
-		perror("getenv method error");
+		printf("get method error!\n");
 		return 1;
 	}
 
-	printf("cgi method = %s \n" ,method);
-
-	if(strcasecmp(method, "GET") == 0)
-	{//GET
-		printf("QUERY_STRING...\n");
-		if(getenv("QUERY_STRING"))
-		{
-			strcpy(content_data, getenv("QUERY_STRING"));
-		}
-		else
-		{
-			perror("getenv query_string error");
-			return 2;
-		}
-	}
-	else
-	{//POST
-		printf("CONTENT_LEN....\n");
-		if(getenv("CONTENT_LENGTH"))
-		{
-			strcpy(content_len, getenv("CONTENT_LENGTH"));
-			int len = atoi(content_len);
-			int i = 0;
-			char ch = '\0';
-			for(i = 0; i < len; i++)
-			{
-				read(0, &ch, 1);
-				content_data[i] = ch;
-			}
-			content_data[i] = 0;
-		}
-		else
-		{
-			perror("getenv content_len error");
-			return 3;
-		}
-	}
-	math_data(content_data);
+	math_cal(buff);
 	return 0;
 }
