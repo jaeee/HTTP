@@ -1,7 +1,7 @@
 
 math_cgi:math_cgi.c
-	gcc -o $@ $^
+	@gcc -o $@ $^
 
 .PHONY:clean
 clean:
-	rm -f math_cgi
+	@rm -f math_cgi
