@@ -33,7 +33,7 @@ int sql::connect()
 int sql::insert(const std::string &name, const std::string &sex,\
 		const std::string &school, const std::string &hobby)
 {
-	std::string sql = "INSERT INTO student (name, sex, school, hooby) values('";
+	std::string sql = "INSERT INTO student (name, sex, school, hobby) values('";
 	sql += name;
 	sql += "','";
 	sql += sex;
@@ -41,7 +41,7 @@ int sql::insert(const std::string &name, const std::string &sex,\
 	sql += school;
 	sql += "','";
 	sql += hobby;
-	sql += "')";
+	sql += "');";
 
 	int ret = mysql_query(conn, sql.c_str());
 	std::cout << sql << "ret: " << ret << std::endl;
